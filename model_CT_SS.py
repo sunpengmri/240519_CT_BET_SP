@@ -10,7 +10,7 @@ import os
 import numpy as np
 from keras.layers.core import Lambda
 from keras.models import Model
-from keras.utils import multi_gpu_model
+# from keras.utils import multi_gpu_model
 from keras import backend as K
 from keras.layers import (Input, concatenate, Conv2D, 
                           MaxPooling2D, Conv2DTranspose, Activation, 
@@ -123,7 +123,7 @@ class Unet_CT_SS(object):
     def loadTrainingData(self,images_path,labels_path, each):
         images = nb.load(os.path.join(images_path,each)).get_data()
         labels = nb.load(os.path.join(labels_path,each)).get_data()
-        affine = nb.load(os.path.join(images_path,each)).get_affine()        
+        affine = nb.load(os.path.join(images_path,each)).affine       
         
         if self.dataAugmentation:
             images,labels = self.datagen.generate(images,labels,self.afold,affine)
@@ -135,7 +135,7 @@ class Unet_CT_SS(object):
 
     def loadPredData(self,images_path, each):
         images = nb.load(os.path.join(images_path,each)).get_data()
-        affine = nb.load(os.path.join(images_path,each)).get_affine()
+        affine = nb.load(os.path.join(images_path,each)).affine
         [self.img_rows,self.img_cols,self.numImgs] = images.shape
         images = images.transpose(2,0,1).reshape(self.numImgs, self.img_rows,self.img_cols,1).astype(self.dtype)
         return images, affine
@@ -143,7 +143,7 @@ class Unet_CT_SS(object):
     def load3DtrainingData(self,images_path,labels_path, each):
         images = nb.load(os.path.join(images_path,each)).get_data().astype('float32')
         labels = nb.load(os.path.join(labels_path,each)).get_data().astype('uint8')
-        affine = nb.load(os.path.join(images_path,each)).get_affine()
+        affine = nb.load(os.path.join(images_path,each))._affine()
         ind = np.where(labels>0)
         labels[ind]=1
 
@@ -156,13 +156,13 @@ class Unet_CT_SS(object):
         return images,labels, affine
     
     def load3DtestData(self,images_path,labels_path, each):
-        images = nb.load(os.path.join(images_path,each)).get_data().astype('float32')
-        affine = nb.load(os.path.join(images_path,each)).get_affine()
+        images = nb.load(os.path.join(images_path,each)).get_fdata().astype('float32')
+        affine = nb.load(os.path.join(images_path,each)).affine
         if len(images.shape)>3:
           images=images[:,:,:,0]
 
         if self.testLabelFlag:
-            labels = nb.load(os.path.join(labels_path,each)).get_data().astype('uint8')
+            labels = nb.load(os.path.join(labels_path,each)).get_fdata().astype('uint8')
             ind = np.where(labels>0)
             labels[ind]=1
         else:
@@ -171,12 +171,12 @@ class Unet_CT_SS(object):
         return images,labels, affine
       
     def loadTestData(self,images_path,labels_path, each):
-        images = nb.load(os.path.join(images_path,each)).get_data()
-        affine = nb.load(os.path.join(images_path,each)).get_affine()
+        images = nb.load(os.path.join(images_path,each)).get_fdata()
+        affine = nb.load(os.path.join(images_path,each)).affine
         [self.img_rows,self.img_cols,self.numImgs] = images.shape
         images = images.transpose(2,0,1).reshape(self.numImgs, self.img_rows,self.img_cols,1).astype(self.dtype)
         if self.testLabelFlag:
-            labels = nb.load(os.path.join(labels_path,each)).get_data()
+            labels = nb.load(os.path.join(labels_path,each)).get_fdata()
             labels = labels.transpose(2,0,1).reshape(self.numImgs, self.img_rows,self.img_cols,1).astype(self.dtypeL)
         else:
             labels = []
